@@ -261,6 +261,7 @@
         <input id="flightNum" placeholder="Flight Number" />
         <input id="planeType" placeholder="Plane Type" />
         <input id="fromAirport" placeholder="From Airport" />
+        <input id="stopoverAirport" placeholder="Stopover Airport(optional)" />
         <input id="toAirport" placeholder="To Airport" />
         <input type="datetime-local" id="departureTime" />
         <input type="number" id="frequency" min="1" max="7" placeholder="Times per week" />
@@ -377,38 +378,50 @@
     }
 
     function addFlight() {
-      const flight = {
-        number: document.getElementById("flightNum").value,
-        plane: document.getElementById("planeType").value,
-        from: document.getElementById("fromAirport").value,
-        to: document.getElementById("toAirport").value,
-        departure: document.getElementById("departureTime").value,
-        frequency: document.getElementById("frequency").value ? `${document.getElementById("frequency").value}x per week` : "One-time"
-      };
-      if (!flight.number || !flight.from || !flight.to || !flight.departure) {
-        alert("Please complete all required fields.");
-        return;
-      }
-      airlines[currentAirline].flights.push(flight);
-      saveToStorage();
-      renderFlights();
-      document.querySelectorAll(".schedule-form input").forEach(i => i.value = "");
-    }
+  const flight = {
+    number: document.getElementById("flightNum").value,
+    plane: document.getElementById("planeType").value,
+    from: document.getElementById("fromAirport").value,
+    stopover: document.getElementById("stopoverAirport").value || null, // NEW
+    to: document.getElementById("toAirport").value,
+    departure: document.getElementById("departureTime").value,
+    frequency: document.getElementById("frequency").value
+      ? `${document.getElementById("frequency").value}x per week`
+      : "One-time"
+  };
 
-    function renderFlights() {
-      const list = document.getElementById("flightList");
-      list.innerHTML = "";
-      airlines[currentAirline].flights.forEach((flight, i) => {
-        const li = document.createElement("li");
-        li.innerHTML = `
-          ✈️ <strong>${flight.number}</strong> | ${flight.from} → ${flight.to}<br/>
-          🛫 ${new Date(flight.departure).toLocaleString()} (${flight.frequency})<br/>
-          🛩️ ${flight.plane}
-          <button class="remove-btn" onclick="deleteFlight(${i})">×</button>
-        `;
-        list.appendChild(li);
-      });
-    }
+  if (!flight.number || !flight.from || !flight.to || !flight.departure) {
+    alert("Please complete all required fields.");
+    return;
+  }
+
+  airlines[currentAirline].flights.push(flight);
+  saveToStorage();
+  renderFlights();
+
+  // Clear inputs
+  document.querySelectorAll(".schedule-form input").forEach(i => i.value = "");
+}
+
+function renderFlights() {
+  const list = document.getElementById("flightList");
+  list.innerHTML = "";
+
+  airlines[currentAirline].flights.forEach((flight, i) => {
+    const route = flight.stopover
+      ? `${flight.from} → ${flight.stopover} → ${flight.to}`
+      : `${flight.from} → ${flight.to}`;
+
+    const li = document.createElement("li");
+    li.innerHTML = `
+      ✈️ <strong>${flight.number}</strong> | ${route}<br/>
+      🛫 ${new Date(flight.departure).toLocaleString()} (${flight.frequency})<br/>
+      🛩️ ${flight.plane}
+      <button class="remove-btn" onclick="deleteFlight(${i})">×</button>
+    `;
+    list.appendChild(li);
+  });
+}
 
     function deleteFlight(index) {
       airlines[currentAirline].flights.splice(index, 1);
