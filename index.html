@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Flight Schedule Manager with Fleet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --dark: #30362F;
+      --brown: #625834;
+      --gold: #A59132;
+      --light: #FFFBDC;
+      --accent: #DA7422;
+    }
+    body {
+      margin: 0;
+      font-family: 'Comfortaa', cursive, sans-serif;
+      background: var(--dark) url('airplane.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: var(--light);
+      padding: 2rem;
+    }
+    input, select, button {
+      font-family: 'Comfortaa', cursive, sans-serif;
+    }
+    h1, h2 {
+      text-align: center;
+      color: var(--gold);
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+    header .left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    header img {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    button {
+      background-color: var(--brown);
+      color: var(--light);
+      border: none;
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background-color: var(--gold);
+      color: var(--dark);
+    }
+    .danger {
+      background: var(--accent);
+    }
+    input, select {
+      width: 100%;
+      padding: 0.7rem;
+      border-radius: 6px;
+      border: 1px solid var(--gold);
+      font-size: 1rem;
+      background: var(--light);
+      color: var(--dark);
+      box-sizing: border-box;
+    }
+    .input-group, .schedule-form, .fleet-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .section {
+      max-width: 950px;
+      margin: auto;
+      background: rgba(255, 251, 219, 0.1);
+      padding: 2rem;
+      border-radius: 12px;
+    }
+    .airline-card {
+      background: rgba(255, 251, 219, 0.2);
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      margin-bottom: 1rem;
+      transition: transform 0.2s ease;
+    }
+    .airline-card:hover {
+      transform: scale(1.01);
+    }
+    .airline-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      cursor: pointer;
+    }
+    .airline-info img {
+      width: 50px;
+      height: 50px;
+      border-radius: 6px;
+      object-fit: cover;
+      border: 2px solid var(--gold);
+    }
+    .airline-actions button {
+      margin-left: 0.4rem;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      background: rgba(255, 251, 219, 0.15);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      position: relative;
+      color: var(--light);
+    }
+    .remove-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 0.4rem 0.6rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    img.livery-img {
+      max-width: 100px;
+      max-height: 60px;
+      border-radius: 6px;
+      border: 1px solid var(--gold);
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    .fleet-plane-buttons button {
+      margin-right: 6px;
+      margin-top: 8px;
+    }
+    @media (max-width: 600px) {
+      .input-group, .schedule-form, .fleet-form {
+        grid-template-columns: 1fr;
+      }
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+    }
+    .file-input-wrapper {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+    }
+    .file-input-wrapper input[type="file"] {
+      opacity: 0;
+      position: absolute;
+      width: 0;
+      height: 0;
+      z-index: -1;
+    }
+    .custom-file-label {
+      display: inline-block;
+      background-color: var(--brown);
+      color: var(--light);
+      padding: 0.7rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      user-select: none;
+      width: 100%;
+      box-sizing: border-box;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+    }
+    .custom-file-label:hover {
+      background-color: var(--gold);
+      color: var(--dark);
+    }
+    .file-name {
+      margin-top: 0.3rem;
+      font-size: 0.9rem;
+      color: var(--gold);
+      font-style: italic;
+      min-height: 1.3em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    
+    .livery-img {
+  width: 1000px;
+  height: auto;
+  border-radius: 8px;
+  margin: 8px 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  object-fit: contain;
+}
+
+  </style>
+</head>
+<body>
+  <div class="section">
+    <header>
+      <div class="left">
+        <img src="pigeon.png" alt="Logo" />
+        <button onclick="showCreateAirlineForm()">+ Create New Airline</button>
+      </div>
+      <h1>Flight Schedule Manager</h1>
+    </header>
+
+    <!-- Airline List -->
+    <div id="airlineList"></div>
+
+    <!-- Airline Form -->
+    <div id="createAirlineForm" style="display: none;">
+      <h2 id="formTitle">Create New Airline</h2>
+      <div class="input-group">
+        <input id="airlineName" placeholder="Airline Name" />
+        <div class="file-input-wrapper">
+          <label for="logoInput" class="custom-file-label">Choose Logo File</label>
+          <input type="file" id="logoInput" accept="image/*" />
+          <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+            <div id="fileName" class="file-name"></div>
+            <button type="button" id="removeImageBtn" style="display:none; background:#DA7422; color:white; border:none; padding: 0.3rem 0.6rem; border-radius:4px; cursor:pointer;">Remove</button>
+          </div>
+          <img id="logoPreview" alt="Logo Preview" style="display:none; max-width: 100px; margin-top: 10px; border-radius: 6px; border: 1px solid var(--gold);" />
+        </div>
+      </div>
+      <button onclick="saveAirline()">Save Airline</button>
+      <button onclick="cancelAirlineEdit()">Cancel</button>
+    </div>
+
+    <!-- Schedule Section -->
+    <div id="scheduleSection" style="display: none;">
+      <h2 id="scheduleTitle">Flight Schedule</h2>
+      <div class="schedule-form">
+        <input id="flightNum" placeholder="Flight Number" />
+        <input id="planeType" placeholder="Plane Type" />
+        <input id="fromAirport" placeholder="From Airport" />
+        <input id="stopoverAirport" placeholder="Stopover Airport(optional)" />
+        <input id="toAirport" placeholder="To Airport" />
+        <input type="time" id="departureTime" />
+        <input type="number" id="frequency" min="1" max="1000" placeholder="Times per week" />
+        <button id="addFlightBtn" onclick="addFlight()">Add Flight</button>
+      </div>
+      <ul id="flightList"></ul>
+      <button onclick="exitSchedule()">← Back to Airlines</button>
+      <button onclick="downloadPDF()">Download Schedule as PDF</button>
+    </div>
+
+    <!-- Fleet Section -->
+ <div id="fleetSection" style="display: none;">
+  <h2 id="fleetTitle">Fleet Management</h2>
+  <form id="planeForm" class="fleet-form" onsubmit="submitPlaneForm(event)">
+    <input id="planeReg" placeholder="Plane Registration" required />
+    <input id="planeHub" placeholder="Hub Airport" required />
+    <input id="planeModel" placeholder="Plane Model (e.g. A320, 737)" required />
+
+    <div>
+      <label for="planeLivery" class="custom-file-label">Choose Livery Image</label>
+      <input type="file" id="planeLivery" accept="image/*" required />
+    </div>
+
+    <div>
+      <label for="planeSpecialLivery" class="custom-file-label">Choose Special Livery (optional)</label>
+      <input type="file" id="planeSpecialLivery" accept="image/*" />
+    </div>
+
+    <button type="submit" id="submitPlaneBtn">Add</button>
+    <button type="button" onclick="exitFleet()">← Back to Airlines</button>
+  </form>
+
+  <ul id="fleetList" style="margin-top: 20px;"></ul>
+</div>
+
+<div id="routesSection" style="display: none;">
+  <h2 id="routesTitle">Routes Management</h2>
+
+  <form id="routeForm" onsubmit="submitRouteForm(event)">
+    <input id="fromAirportRoute" placeholder="From Airport" required />
+    <input id="stopoverAirportRoute" placeholder="Stopover Airport (optional)" />
+    <input id="toAirportRoute" placeholder="To Airport" required />
+    <button type="submit" id="submitRouteBtn">Add Route</button>
+    <button type="button" onclick="exitRoutes()">← Back to Airlines</button>
+  </form>
+
+  <ul id="routeList"></ul>
+</div>
+
+
+<div id="routeFlightsSection" style="display: none;">
+  <h2 id="routeFlightsTitle">Add Flights to Route</h2>
+  <form id="flightForm" onsubmit="submitFlightForm(event)">
+    <input id="flightNumber" placeholder="Flight Number" required />
+    <input id="flightDepartureTime" type="time" required />
+    <input id="flightFrequency" placeholder="Frequency (e.g. 3x per week)" />
+    <input id="flightRegistration" placeholder="Aircraft Registration" required />
+    <button type="submit">Add Flight</button>
+    <button type="button" onclick="exitRouteFlights()">← Back to Routes</button>
+  </form>
+  <ul id="routeFlightList"></ul>
+</div>
+
+
+  <script>// ======== Global state ========
+let airlines = JSON.parse(localStorage.getItem("airlines")) || [];
+let currentAirline = null;
+let editingAirlineIndex = null;
+let editingPlaneIndex = null;
+let editingRouteIndex = null;
+let currentRouteIndex = null;
+
+// ======= Storage =======
+function saveToStorage() {
+  localStorage.setItem("airlines", JSON.stringify(airlines));
+}
+
+// ======= Airlines =======
+function renderAirlines() {
+  const list = document.getElementById("airlineList");
+  list.innerHTML = "";
+  airlines.forEach((airline, index) => {
+    const div = document.createElement("div");
+    div.className = "airline-card";
+    div.innerHTML = `
+      <div class="airline-info" onclick="openAirlineActions(${index})" style="cursor:pointer;">
+        <img src="${airline.logo || ""}" alt="Logo" />
+        <strong>${airline.name}</strong>
+      </div>
+      <div class="airline-actions">
+        <button onclick="event.stopPropagation(); editAirline(${index})">Edit</button>
+        <button onclick="event.stopPropagation(); deleteAirline(${index})" class="danger">Delete</button>
+        <button onclick="event.stopPropagation(); openFleet(${index})">Fleet</button>
+        <button onclick="event.stopPropagation(); openRoutes(${index})">Routes</button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+
+  showSection('airlineList');
+}
+
+function showCreateAirlineForm() {
+  editingAirlineIndex = null;
+  document.getElementById("formTitle").innerText = "Create New Airline";
+  document.getElementById("airlineName").value = "";
+  clearAirlineLogoInputs();
+  showSection('createAirlineForm');
+}
+
+function clearAirlineLogoInputs() {
+  const logoInput = document.getElementById("logoInput");
+  const fileNameDiv = document.getElementById("fileName");
+  const logoPreview = document.getElementById("logoPreview");
+  const removeImageBtn = document.getElementById("removeImageBtn");
+  logoInput.value = "";
+  fileNameDiv.textContent = "";
+  logoPreview.style.display = "none";
+  logoPreview.src = "";
+  removeImageBtn.style.display = "none";
+}
+
+function saveAirline() {
+  const name = document.getElementById("airlineName").value.trim();
+  const fileInput = document.getElementById("logoInput");
+  const file = fileInput.files[0];
+
+  if (!name) {
+    alert("Please enter an airline name.");
+    return;
+  }
+
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      finishSaveAirline(name, reader.result);
+    };
+    reader.readAsDataURL(file);
+  } else {
+    // If editing and no new file selected, keep old logo
+    const oldLogo = editingAirlineIndex !== null ? airlines[editingAirlineIndex].logo : "";
+    finishSaveAirline(name, oldLogo);
+  }
+}
+
+function finishSaveAirline(name, logo) {
+  if (editingAirlineIndex !== null) {
+    airlines[editingAirlineIndex].name = name;
+    airlines[editingAirlineIndex].logo = logo;
+  } else {
+    airlines.push({ name, logo, fleet: [], routes: [] });
+  }
+  saveToStorage();
+  renderAirlines();
+}
+
+function editAirline(index) {
+  editingAirlineIndex = index;
+  const airline = airlines[index];
+  document.getElementById("formTitle").innerText = "Edit Airline";
+  document.getElementById("airlineName").value = airline.name;
+  clearAirlineLogoInputs();
+  if (airline.logo) {
+    const logoPreview = document.getElementById("logoPreview");
+    logoPreview.src = airline.logo;
+    logoPreview.style.display = "block";
+    document.getElementById("removeImageBtn").style.display = "inline-block";
+  }
+  showSection('createAirlineForm');
+}
+
+function deleteAirline(index) {
+  if (confirm("Are you sure you want to delete this airline and all its data?")) {
+    airlines.splice(index, 1);
+    saveToStorage();
+    renderAirlines();
+  }
+}
+
+function cancelAirlineEdit() {
+  renderAirlines();
+}
+
+// ======= Fleet =======
+function openFleet(index) {
+  currentAirline = index;
+  editingPlaneIndex = null;
+  clearPlaneForm();
+  renderFleet();
+  document.getElementById("fleetTitle").innerText = `${airlines[index].name} Fleet Management`;
+  showSection('fleetSection');
+}
+
+function renderFleet() {
+  const fleetList = document.getElementById("fleetList");
+  fleetList.innerHTML = "";
+  const fleet = airlines[currentAirline].fleet || [];
+
+  fleet.forEach((plane, i) => {
+    fleetList.appendChild(createPlaneListItem(plane, i));
+  });
+
+  clearPlaneForm();
+  document.getElementById("submitPlaneBtn").textContent = "Add";
+}
+
+function createPlaneListItem(plane, index) {
+  const li = document.createElement("li");
+
+  const liveryImg = plane.livery
+    ? `<img src="${plane.livery}" alt="Livery" class="livery-img" />`
+    : "";
+  const specialImg = plane.specialLivery
+    ? `<img src="${plane.specialLivery}" alt="Special Livery" class="livery-img" />`
+    : "";
+
+  li.innerHTML = `
+    <strong>${plane.registration}</strong> - ${plane.hub} - ${plane.model || "Unknown model"}<br/>
+    ${liveryImg} ${specialImg}
+    <div class="fleet-plane-buttons">
+      <button onclick="event.stopPropagation(); editPlane(${index})">Edit</button>
+      <button onclick="event.stopPropagation(); deletePlane(${index})" class="danger">Delete</button>
+    </div>
+  `;
+  return li;
+}
+
+function submitPlaneForm(e) {
+  e.preventDefault();
+
+  const registration = document.getElementById("planeReg").value.trim();
+  const hub = document.getElementById("planeHub").value.trim();
+  const liveryFile = document.getElementById("planeLivery").files[0];
+  const specialFile = document.getElementById("planeSpecialLivery").files[0];
+  const model = document.getElementById("planeModel").value.trim();
+
+  if (!registration || !hub) {
+    alert("Please fill in all required fields.");
+    return;
+  }
+
+  const fleet = airlines[currentAirline].fleet || [];
+  const promises = [];
+
+  if (liveryFile) {
+    promises.push(fileToBase64(liveryFile));
+  } else if (editingPlaneIndex !== null) {
+    promises.push(Promise.resolve(fleet[editingPlaneIndex].livery));
+  } else {
+    alert("Please choose a livery image.");
+    return;
+  }
+
+  if (specialFile) {
+    promises.push(fileToBase64(specialFile));
+  } else if (editingPlaneIndex !== null) {
+    promises.push(Promise.resolve(fleet[editingPlaneIndex].specialLivery || null));
+  } else {
+    promises.push(Promise.resolve(null));
+  }
+
+  Promise.all(promises).then(([liveryBase64, specialBase64]) => {
+    const planeData = {
+      registration,
+      hub,
+      model,
+      livery: liveryBase64,
+      specialLivery: specialBase64
+    };
+
+    if (!airlines[currentAirline].fleet) airlines[currentAirline].fleet = [];
+
+    if (editingPlaneIndex !== null) {
+      airlines[currentAirline].fleet[editingPlaneIndex] = planeData;
+      editingPlaneIndex = null;
+      document.getElementById("submitPlaneBtn").textContent = "Add";
+    } else {
+      airlines[currentAirline].fleet.push(planeData);
+    }
+
+    saveToStorage();
+    renderFleet();
+    clearPlaneForm();
+  });
+}
+
+function editPlane(index) {
+  const plane = airlines[currentAirline].fleet[index];
+  document.getElementById("planeReg").value = plane.registration;
+  document.getElementById("planeHub").value = plane.hub;
+  document.getElementById("planeModel").value = plane.model || "";
+
+  // Can't prefill file inputs for security reasons; user must re-upload if needed
+  document.getElementById("planeLivery").value = "";
+  document.getElementById("planeSpecialLivery").value = "";
+
+  editingPlaneIndex = index;
+  document.getElementById("submitPlaneBtn").textContent = "Update";
+}
+
+function deletePlane(index) {
+  if (confirm("Delete this plane?")) {
+    airlines[currentAirline].fleet.splice(index, 1);
+    saveToStorage();
+    renderFleet();
+  }
+}
+
+function clearPlaneForm() {
+  document.getElementById("planeReg").value = "";
+  document.getElementById("planeHub").value = "";
+  document.getElementById("planeLivery").value = "";
+  document.getElementById("planeSpecialLivery").value = "";
+  document.getElementById("planeModel").value = "";
+  editingPlaneIndex = null;
+  document.getElementById("submitPlaneBtn").textContent = "Add";
+}
+
+function exitFleet() {
+  currentAirline = null;
+  editingPlaneIndex = null;
+  renderAirlines();
+}
+
+// ======= Routes =======
+function openRoutes(index) {
+  currentAirline = index;
+  editingRouteIndex = null;
+  renderRoutes();
+  document.getElementById('routesTitle').innerText = `${airlines[index].name} Routes Management`;
+  showSection('routesSection');
+}
+
+function renderRoutes() {
+  const routeList = document.getElementById('routeList');
+  routeList.innerHTML = "";
+  const routes = airlines[currentAirline].routes || [];
+
+  routes.forEach((route, i) => {
+    const routeText = `${route.from} → ${route.stopover ? route.stopover + " → " : ""}${route.to}`;
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <strong>${routeText}</strong>
+      <button onclick="event.stopPropagation(); editRoute(${i})">Edit</button>
+      <button onclick="event.stopPropagation(); deleteRoute(${i})" class="danger">Delete</button>
+      <button onclick="event.stopPropagation(); openRouteFlights(${i})">Add Flights</button>
+    `;
+    routeList.appendChild(li);
+  });
+
+  clearRouteForm();
+}
+
+function clearRouteForm() {
+  document.getElementById('fromAirportRoute').value = "";
+  document.getElementById('stopoverAirportRoute').value = "";
+  document.getElementById('toAirportRoute').value = "";
+  editingRouteIndex = null;
+  document.getElementById('submitRouteBtn').textContent = "Add Route";
+}
+
+function submitRouteForm(e) {
+  e.preventDefault();
+
+  const from = document.getElementById('fromAirportRoute').value.trim();
+  const stopover = document.getElementById('stopoverAirportRoute').value.trim();
+  const to = document.getElementById('toAirportRoute').value.trim();
+
+  if (!from || !to) {
+    alert("Please fill in the From and To airports.");
+    return;
+  }
+
+  const routeData = {
+    id: generateId(),
+    from,
+    stopover: stopover || null,
+    to,
+    flights: []
+  };
+
+  if (!airlines[currentAirline].routes) airlines[currentAirline].routes = [];
+
+  if (editingRouteIndex !== null) {
+    // Preserve flights when updating a route
+    routeData.flights = airlines[currentAirline].routes[editingRouteIndex].flights || [];
+    airlines[currentAirline].routes[editingRouteIndex] = routeData;
+    editingRouteIndex = null;
+  } else {
+    airlines[currentAirline].routes.push(routeData);
+  }
+
+  saveToStorage();
+  renderRoutes();
+  clearRouteForm();
+}
+
+function editRoute(index) {
+  const route = airlines[currentAirline].routes[index];
+  document.getElementById('fromAirportRoute').value = route.from;
+  document.getElementById('stopoverAirportRoute').value = route.stopover || "";
+  document.getElementById('toAirportRoute').value = route.to;
+  editingRouteIndex = index;
+  document.getElementById('submitRouteBtn').textContent = "Update Route";
+}
+
+function deleteRoute(index) {
+  if (confirm("Are you sure you want to delete this route?")) {
+    airlines[currentAirline].routes.splice(index, 1);
+    saveToStorage();
+    renderRoutes();
+  }
+}
+
+function exitRoutes() {
+  currentAirline = null;
+  editingRouteIndex = null;
+  renderAirlines();
+  showSection('airlineList');
+}
+
+// ======= Route Flights =======
+function openRouteFlights(routeIndex) {
+  currentRouteIndex = routeIndex;
+  showSection('routeFlightsSection');
+
+  const route = airlines[currentAirline].routes[routeIndex];
+  const stop = route.stopover ? ` → ${route.stopover}` : "";
+  document.getElementById("routeFlightsTitle").innerText = `Flights for route: ${route.from}${stop} → ${route.to}`;
+
+  renderRouteFlights();
+}
+
+function renderRouteFlights() {
+  const flightList = document.getElementById("routeFlightList");
+  flightList.innerHTML = "";
+
+  const route = airlines[currentAirline].routes[currentRouteIndex];
+  const flights = route.flights || [];
+
+  flights.forEach((flight, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <strong>${flight.number}</strong> - Departure: ${flight.departure} - Frequency: ${flight.frequency} - Registration: ${flight.registration}
+      <button onclick="event.stopPropagation(); deleteRouteFlight(${i})" class="danger">Delete</button>
+    `;
+    flightList.appendChild(li);
+  });
+}
+
+function submitFlightForm(e) {
+  e.preventDefault();
+
+  const number = document.getElementById("flightNumber").value.trim();
+  const departure = document.getElementById("flightDepartureTime").value;
+  const frequency = document.getElementById("flightFrequency").value.trim();
+  const registration = document.getElementById("flightRegistration").value.trim();
+
+  if (!number || !departure || !registration) {
+    alert("Please fill in all required fields (Flight Number, Departure Time, Aircraft Registration).");
+    return;
+  }
+
+  const flight = {
+    number,
+    departure,
+    frequency: frequency || "One-time",
+    registration
+  };
+
+  const route = airlines[currentAirline].routes[currentRouteIndex];
+  route.flights = route.flights || [];
+  route.flights.push(flight);
+
+  saveToStorage();
+  renderRouteFlights();
+
+  e.target.reset();
+}
+
+function deleteRouteFlight(flightIndex) {
+  if (!confirm("Delete this flight?")) return;
+
+  const route = airlines[currentAirline].routes[currentRouteIndex];
+  route.flights.splice(flightIndex, 1);
+
+  saveToStorage();
+  renderRouteFlights();
+}
+
+function exitRouteFlights() {
+  currentRouteIndex = null;
+  showSection('routesSection');
+  renderRoutes();
+}
+
+// ======= Helpers =======
+function showSection(idToShow) {
+  const sections = [
+    'airlineList',
+    'createAirlineForm',
+    'fleetSection',
+    'routesSection',
+    'routeFlightsSection'
+  ];
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (id === idToShow) ? 'block' : 'none';
+  });
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function generateId() {
+  return '_' + Math.random().toString(36).substr(2, 9);
+}
+
+// ======= Logo file input preview =======
+const logoInput = document.getElementById('logoInput');
+const fileNameDiv = document.getElementById('fileName');
+const logoPreview = document.getElementById('logoPreview');
+const removeImageBtn = document.getElementById('removeImageBtn');
+
+logoInput.addEventListener('change', () => {
+  if (logoInput.files && logoInput.files.length > 0) {
+    const file = logoInput.files[0];
+    fileNameDiv.textContent = file.name;
+    removeImageBtn.style.display = "inline-block";
+
+    const reader = new FileReader();
+    reader.onload = e => {
+      logoPreview.src = e.target.result;
+      logoPreview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+  } else {
+    clearAirlineLogoInputs();
+  }
+});
+
+removeImageBtn.addEventListener('click', () => {
+  clearAirlineLogoInputs();
+});
+
+// ======= Initial render =======
+window.onload = () => {
+  renderAirlines();
+};
+
+// Optional placeholder if you want airline-info click to open some details (currently unused)
+function openAirlineActions(index) {
+  // Placeholder - you can define behavior here, or remove onclick on airline-info div
+}
+
+
+  </script>
+  </div>
+</body>
+</html>
